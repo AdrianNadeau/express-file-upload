@@ -1,6 +1,7 @@
 const uploadFile = require("../middleware/upload");
 const fs = require("fs");
-const baseUrl = "http://localhost:8080/files/";
+const baseUrl = "http://localhost:8080/";
+const multer = require("multer");
 
 const upload = async (req, res) => {
   try {
@@ -16,18 +17,23 @@ const upload = async (req, res) => {
   } catch (err) {
     console.log(err);
 
-    if (err.code == "LIMIT_FILE_SIZE") {
-      return res.status(500).send({
+    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).send({
         message: "File size cannot be larger than 2MB!",
       });
+    } else if (err.message === "Only .jpeg, .jpg, .png, and .gif formats are allowed!") {
+      return res.status(400).send({ message: err.message });
     }
 
     res.status(500).send({
-      message: `Could not upload the file: ${req.file.originalname}. ${err}`,
+      message: `Could not upload the file: ${req.file ? req.file.originalname : ''}. ${err.message}`,
     });
   }
 };
 
+module.exports = {
+  upload,
+};
 const getListFiles = (req, res) => {
   const directoryPath = __basedir + "/resources/static/assets/uploads/";
 
